@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1e3a8a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="YS Kassa">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%231e3a8a'/%3E%3Ctext x='50' y='65' text-anchor='middle' font-size='48' fill='white'%3E%F0%9F%8F%A6%3C/text%3E%3C/svg%3E">
+<title>YS Kassa</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy: #1e3a8a;
+    --blue: #1d4ed8;
+    --light: #dbeafe;
+    --green: #16a34a;
+    --red: #dc2626;
+    --gray: #f1f5f9;
+    --border: #e2e8f0;
+    --text: #1e293b;
+    --dim: #94a3b8;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--gray);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* HEADER */
+  .header {
+    background: var(--navy);
+    padding: calc(env(safe-area-inset-top) + 14px) 20px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,.2);
+  }
+  .header img { height: 32px; }
+  .header-title { color: #fff; }
+  .header-title h1 { font-size: 18px; font-weight: 700; }
+  .header-title p { font-size: 12px; opacity: 0.7; }
+
+  /* CONTENT */
+  .content { padding: 20px 16px; max-width: 480px; margin: 0 auto; }
+
+  /* CARDS */
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 14px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  }
+  .card-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--dim);
+    margin-bottom: 10px;
+  }
+
+  /* INPUTS */
+  input, select, textarea {
+    width: 100%;
+    padding: 14px 16px;
+    font-size: 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    background: var(--gray);
+    color: var(--text);
+    outline: none;
+    transition: border-color .15s;
+    -webkit-appearance: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--navy);
+    background: #fff;
+  }
+  input[type="number"] {
+    font-size: 24px;
+    font-weight: 700;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  input[type="date"] { font-size: 16px; }
+
+  /* BEDRAG LABELS */
+  .bedrag-wrap {
+    position: relative;
+  }
+  .bedrag-wrap::before {
+    content: '€';
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 18px;
+    color: var(--dim);
+    pointer-events: none;
+  }
+  .bedrag-wrap input {
+    padding-left: 32px;
+  }
+
+  /* VERSCHIL BOX */
+  .verschil-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    background: var(--gray);
+    border-radius: 12px;
+    margin-top: 4px;
+  }
+  .verschil-label { font-size: 14px; color: var(--dim); }
+  .verschil-val {
+    font-size: 20px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .verschil-pos { color: var(--green); }
+  .verschil-neg { color: var(--red); }
+  .verschil-nul { color: var(--dim); }
+
+  /* TEXTAREA */
+  textarea { font-size: 15px; resize: none; }
+
+  /* KNOP */
+  .btn-submit {
+    width: 100%;
+    padding: 18px;
+    font-size: 17px;
+    font-weight: 700;
+    background: var(--navy);
+    color: #fff;
+    border: none;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: background .15s, transform .1s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-submit:active { transform: scale(.98); background: var(--blue); }
+  .btn-submit:disabled { background: var(--dim); cursor: not-allowed; }
+
+  /* STATUS MESSAGES */
+  .toast {
+    position: fixed;
+    bottom: calc(24px + env(safe-area-inset-bottom));
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1e293b;
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 40px;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 999;
+    opacity: 0;
+    transition: opacity .3s;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+  .toast.success { background: var(--green); }
+  .toast.error { background: var(--red); }
+
+  /* LOGIN OVERLAY */
+  #login-overlay {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(160deg, #1e3a8a 0%, #1d4ed8 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    z-index: 9999;
+  }
+  .login-box {
+    background: #fff;
+    border-radius: 20px;
+    padding: 32px 24px;
+    width: 100%;
+    max-width: 360px;
+    text-align: center;
+  }
+  .login-logo { height: 52px; margin-bottom: 6px; }
+  .login-tagline { font-size: 12px; color: var(--dim); margin-bottom: 28px; font-style: italic; }
+  .login-stap { display: none; }
+  .login-stap.actief { display: block; }
+  .login-title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .login-sub { font-size: 12px; color: var(--dim); margin-bottom: 18px; }
+  .login-bedrijflabel { font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 14px; }
+
+  .pin-input {
+    font-size: 32px !important;
+    letter-spacing: .5em;
+    text-align: center !important;
+    font-weight: 700;
+    padding: 16px !important;
+    border: 2px solid var(--border);
+    border-radius: 14px;
+  }
+  .pin-input:focus { border-color: var(--navy); }
+
+  .btn-login {
+    width: 100%;
+    padding: 16px;
+    font-size: 16px;
+    font-weight: 700;
+    background: var(--navy);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    margin-top: 14px;
+  }
+  .btn-back {
+    background: none;
+    border: none;
+    color: var(--dim);
+    font-size: 13px;
+    cursor: pointer;
+    margin-top: 12px;
+    padding: 4px;
+  }
+  .login-fout {
+    color: var(--red);
+    font-size: 13px;
+    margin-top: 10px;
+    display: none;
+  }
+
+  /* BLOKKERING */
+  .geblokkeerd input, .geblokkeerd button.btn-login { opacity: .5; pointer-events: none; }
+
+  /* SUCCES SCHERM */
+  #succes-scherm {
+    display: none;
+    text-align: center;
+    padding: 40px 20px;
+  }
+  .succes-icon { font-size: 64px; margin-bottom: 16px; }
+  .succes-titel { font-size: 22px; font-weight: 700; color: var(--green); margin-bottom: 8px; }
+  .succes-sub { font-size: 15px; color: var(--dim); margin-bottom: 32px; }
+  .btn-opnieuw {
+    padding: 14px 32px;
+    font-size: 15px;
+    font-weight: 600;
+    background: var(--navy);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+  }
+
+  /* RATE LIMIT TIMER */
+  .timer { font-size: 28px; font-weight: 700; color: var(--red); margin: 8px 0; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN OVERLAY -->
+<div id="login-overlay">
+  <div class="login-box">
+    <img class="login-logo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%231e3a8a'/%3E%3Ctext x='50' y='65' text-anchor='middle' font-size='48' fill='white'%3E%F0%9F%8F%A6%3C/text%3E%3C/svg%3E" alt="YS Kassa">
+    <p class="login-tagline">Kassa afsluiten</p>
+
+    <!-- Stap 1: Bedrijf -->
+    <div id="stap-bedrijf" class="login-stap actief">
+      <p class="login-title">Welkom</p>
+      <p class="login-sub">Voer de bedrijfsnaam in</p>
+      <input type="text" id="inp-bedrijf" placeholder="Bedrijfsnaam"
+        style="margin-bottom:0;"
+        onkeydown="if(event.key==='Enter') naarPin()">
+      <div class="login-fout" id="fout-bedrijf">Bedrijf niet gevonden.</div>
+      <button class="btn-login" onclick="naarPin()">Volgende →</button>
+    </div>
+
+    <!-- Stap 2: PIN -->
+    <div id="stap-pin" class="login-stap">
+      <p class="login-title">Voer je PIN in</p>
+      <p id="bedrijf-badge" class="login-bedrijflabel"></p>
+      <p class="login-sub">Stap 2 van 2</p>
+      <input type="password" inputmode="numeric" maxlength="6"
+        id="inp-pin" class="pin-input" placeholder="••••"
+        onkeydown="if(event.key==='Enter') doPinLogin()">
+      <div class="login-fout" id="fout-pin">Verkeerde PIN.</div>
+      <div class="timer" id="timer" style="display:none;"></div>
+      <button class="btn-login" onclick="doPinLogin()">Inloggen</button>
+      <button class="btn-back" onclick="naarBedrijf()">← Terug</button>
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<div class="header" id="app-header" style="display:none;">
+  <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%231e3a8a'/%3E%3Ctext x='50' y='65' text-anchor='middle' font-size='48' fill='white'%3E%F0%9F%8F%A6%3C/text%3E%3C/svg%3E" alt="YS Kassa">
+  <div class="header-title">
+    <h1>YS Kassa</h1>
+    <p id="header-sub">Kassa afsluiten</p>
+  </div>
+</div>
+
+<!-- KASSA FORMULIER -->
+<div class="content" id="kassa-form" style="display:none;">
+
+  <!-- DATUM -->
+  <div class="card">
+    <div class="card-label">Datum</div>
+    <input type="date" id="inp-datum">
+  </div>
+
+  <!-- BEGIN VAN DE DAG -->
+  <div class="card">
+    <div class="card-label">Begin van de dag</div>
+    <p style="font-size:13px;color:var(--dim);margin-bottom:10px;">Bedrag in kas bij opening</p>
+    <div class="bedrag-wrap">
+      <input type="number" id="inp-begin" inputmode="decimal"
+        placeholder="0,00" step="0.01" oninput="herbereken()">
+    </div>
+  </div>
+
+  <!-- EIND VAN DE DAG -->
+  <div class="card">
+    <div class="card-label">Eind van de dag</div>
+    <p style="font-size:13px;color:var(--dim);margin-bottom:10px;">Geteld bedrag in kas bij sluiting</p>
+    <div class="bedrag-wrap">
+      <input type="number" id="inp-eind" inputmode="decimal"
+        placeholder="0,00" step="0.01" oninput="herbereken()">
+    </div>
+  </div>
+
+  <!-- VERSCHIL -->
+  <div class="card">
+    <div class="card-label">Samenvatting</div>
+    <div class="verschil-box" style="margin-bottom:10px;">
+      <span class="verschil-label">Beginsaldo</span>
+      <span id="sum-begin" style="font-weight:600;">€ —</span>
+    </div>
+    <div class="verschil-box" style="margin-bottom:10px;">
+      <span class="verschil-label">Eindsaldo</span>
+      <span id="sum-eind" style="font-weight:600;">€ —</span>
+    </div>
+    <div class="verschil-box">
+      <span class="verschil-label">Verschil</span>
+      <span id="sum-verschil" class="verschil-val verschil-nul">—</span>
+    </div>
+  </div>
+
+  <!-- NOTITIES -->
+  <div class="card">
+    <div class="card-label">Notities (optioneel)</div>
+    <textarea id="inp-notities" rows="3"
+      placeholder="Bijv. kassaverschil door wisselgeld..."></textarea>
+  </div>
+
+  <!-- INDIENEN -->
+  <button class="btn-submit" id="btn-indienen" onclick="doeIndienen()" style="margin-bottom:32px;">
+    📤 Kassa indienen
+  </button>
+
+</div>
+
+<!-- SUCCES SCHERM -->
+<div class="content" id="succes-scherm">
+  <div class="card" style="padding:40px 20px;text-align:center;">
+    <div class="succes-icon">✅</div>
+    <div class="succes-titel">Ingediend!</div>
+    <div class="succes-sub" id="succes-tekst">Je kassa is ingediend ter goedkeuring.</div>
+    <button class="btn-opnieuw" onclick="opnieuw()">Nieuwe kassa invullen</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+const BACKEND = 'https://script.google.com/macros/s/AKfycbzwlrDPU3OBKQu6Tefl5qnB7HnN716fT_CvByWD7ZzimSPo0Sc5iEIy3QuSKicQwug/exec';
+const DIRECT_BACKEND = 'https://script.google.com/macros/s/AKfycbztujvX7qNdsX0P4hYSiZylVhnuwZf1Cnm2JsnKfJsnOMVrnuJWQAoQpi3EfMTAAmWl/exec';
+
+let _bedrijf = '';
+let _kassierNaam = '';
+let _pinPogingen = 0;
+let _geblokkeerd = false;
+let _timerInterval = null;
+let _kassiersData = [];
+
+// ===== HELPERS =====
+function fmt(n) {
+  return '€ ' + parseFloat(n||0).toFixed(2).replace('.',',');
+}
+function today() {
+  return new Date().toISOString().split('T')[0];
+}
+function uid() {
+  return 'k_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+}
+function rond(n) {
+  return Math.round((parseFloat(n)||0)*100)/100;
+}
+function toast(msg, type='') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + type;
+  clearTimeout(el._t);
+  el._t = setTimeout(()=>el.className='toast', 3000);
+}
+
+// ===== LOGIN =====
+async function laadKassiers() {
+  try {
+    const payload = JSON.stringify({actie:'laad', bedrijf: _bedrijf || 'Persoonlijk'});
+    const url = BACKEND + '?payload=' + encodeURIComponent(payload) + '&t=' + Date.now();
+    const r = await fetch(url, {redirect:'follow'});
+    const txt = await r.text();
+    if (!txt || txt.trim().startsWith('<')) return;
+    const j = JSON.parse(txt);
+    if (j.ok && j.result?.kassiers) {
+      _kassiersData = j.result.kassiers;
+    }
+  } catch(e) { console.warn('Kassiers laden mislukt:', e); }
+}
+
+async function naarPin() {
+  const bedrijf = document.getElementById('inp-bedrijf').value.trim();
+  const fout = document.getElementById('fout-bedrijf');
+  if (!bedrijf) { fout.style.display='block'; fout.textContent='Vul een bedrijfsnaam in.'; return; }
+  fout.style.display='none';
+
+  // Laad kassiers voor dit bedrijf
+  _bedrijf = bedrijf;
+  toast('Bezig...', '');
+  await laadKassiers();
+
+  document.getElementById('bedrijf-badge').textContent = '📍 ' + bedrijf;
+  document.getElementById('stap-bedrijf').classList.remove('actief');
+  document.getElementById('stap-pin').classList.add('actief');
+  document.getElementById('inp-pin').value = '';
+  document.getElementById('fout-pin').style.display = 'none';
+  setTimeout(()=>document.getElementById('inp-pin').focus(), 100);
+}
+
+function naarBedrijf() {
+  document.getElementById('stap-pin').classList.remove('actief');
+  document.getElementById('stap-bedrijf').classList.add('actief');
+  _pinPogingen = 0;
+  _geblokkeerd = false;
+}
+
+function doPinLogin() {
+  if (_geblokkeerd) return;
+  const pin = document.getElementById('inp-pin').value.trim();
+  const fout = document.getElementById('fout-pin');
+
+  // Zoek kassier met juiste PIN en toegang tot bedrijf
+  const gevonden = _kassiersData.find(k =>
+    k.pin === pin && (k.bedrijven||[]).some(b => b.toLowerCase() === _bedrijf.toLowerCase())
+  );
+
+  if (gevonden) {
+    _kassierNaam = gevonden.naam;
+    document.getElementById('login-overlay').style.display = 'none';
+    document.getElementById('app-header').style.display = 'flex';
+    document.getElementById('kassa-form').style.display = 'block';
+    document.getElementById('header-sub').textContent = _bedrijf + ' — ' + _kassierNaam;
+    document.getElementById('inp-datum').value = today();
+    _pinPogingen = 0;
+  } else if (!_kassiersData.length) {
+    fout.style.display = 'block';
+    fout.textContent = 'Geen gebruikers gevonden. Vraag de eigenaar dit in te stellen.';
+  } else {
+    _pinPogingen++;
+    fout.style.display = 'block';
+    fout.textContent = 'Verkeerde PIN. Probeer opnieuw.';
+    document.getElementById('inp-pin').value = '';
+
+    if (_pinPogingen >= 5) {
+      _geblokkeerd = true;
+      let sec = 30;
+      const timerEl = document.getElementById('timer');
+      timerEl.style.display = 'block';
+      const pinEl = document.getElementById('stap-pin');
+      pinEl.classList.add('geblokkeerd');
+      fout.textContent = 'Te veel pogingen.';
+      _timerInterval = setInterval(()=>{
+        sec--;
+        timerEl.textContent = sec + 's';
+        if(sec<=0){
+          clearInterval(_timerInterval);
+          _geblokkeerd = false;
+          _pinPogingen = 0;
+          timerEl.style.display='none';
+          pinEl.classList.remove('geblokkeerd');
+          fout.style.display='none';
+          document.getElementById('inp-pin').value='';
+        }
+      }, 1000);
+    }
+  }
+}
+
+// ===== KASSA =====
+function herbereken() {
+  const begin = rond(parseFloat(document.getElementById('inp-begin').value)||0);
+  const eind  = rond(parseFloat(document.getElementById('inp-eind').value)||0);
+  const verschil = rond(eind - begin);
+
+  document.getElementById('sum-begin').textContent = begin ? fmt(begin) : '€ —';
+  document.getElementById('sum-eind').textContent  = eind  ? fmt(eind)  : '€ —';
+
+  const vEl = document.getElementById('sum-verschil');
+  if (!eind) {
+    vEl.textContent = '—';
+    vEl.className = 'verschil-val verschil-nul';
+  } else if (Math.abs(verschil) < 0.01) {
+    vEl.textContent = '€ 0,00';
+    vEl.className = 'verschil-val verschil-pos';
+  } else {
+    vEl.textContent = (verschil > 0 ? '+' : '') + fmt(verschil);
+    vEl.className = 'verschil-val ' + (verschil >= 0 ? 'verschil-pos' : 'verschil-neg');
+  }
+}
+
+async function doeIndienen() {
+  const datum = document.getElementById('inp-datum').value;
+  const begin = rond(parseFloat(document.getElementById('inp-begin').value)||0);
+  const eind  = rond(parseFloat(document.getElementById('inp-eind').value)||0);
+
+  if (!datum) { toast('Selecteer een datum.', 'error'); return; }
+  if (!eind)  { toast('Vul het eindsaldo in.', 'error'); return; }
+
+  const kassalijst = {
+    id: uid(),
+    datum,
+    ingevoerdDoor: _kassierNaam,
+    ingevoerdOp: new Date().toISOString(),
+    status: 'ingediend',
+    beginsaldo: begin,
+    eindsaldo: eind,
+    verwacht: begin,
+    verschil: rond(eind - begin),
+    totContant: 0,
+    totPin: 0,
+    totUitgaven: 0,
+    totaalOmzet: rond(eind - begin),
+    categorieen: [],
+    uitgaven: [],
+    notities: document.getElementById('inp-notities').value || '',
+  };
+
+  const btn = document.getElementById('btn-indienen');
+  btn.disabled = true;
+  btn.textContent = '⏳ Bezig...';
+
+  try {
+    const payload = JSON.stringify({
+      actie: 'voegKassalijstToe',
+      bedrijf: _bedrijf,
+      data: kassalijst
+    });
+    const url = BACKEND + '?payload=' + encodeURIComponent(payload) + '&t=' + Date.now();
+    const r = await fetch(url, {redirect:'follow'});
+    const txt = await r.text();
+
+    if (!txt || txt.trim().startsWith('<')) throw new Error('Ongeldige response');
+    const j = JSON.parse(txt);
+
+    if (j.ok) {
+      // Succes
+      document.getElementById('kassa-form').style.display = 'none';
+      document.getElementById('succes-scherm').style.display = 'block';
+      document.getElementById('succes-tekst').textContent =
+        'Kassa van ' + datum + ' is ingediend ter goedkeuring bij de eigenaar.';
+    } else {
+      throw new Error(j.fout || 'Onbekende fout');
+    }
+  } catch(e) {
+    toast('Indienen mislukt: ' + e.message, 'error');
+    btn.disabled = false;
+    btn.textContent = '📤 Kassa indienen';
+  }
+}
+
+function opnieuw() {
+  document.getElementById('succes-scherm').style.display = 'none';
+  document.getElementById('kassa-form').style.display = 'block';
+  document.getElementById('inp-begin').value = '';
+  document.getElementById('inp-eind').value = '';
+  document.getElementById('inp-notities').value = '';
+  document.getElementById('inp-datum').value = today();
+  herbereken();
+}
+
+// ===== PWA SERVICE WORKER =====
+if ('serviceWorker' in navigator) {
+  const sw = `
+    self.addEventListener('install', e => self.skipWaiting());
+    self.addEventListener('activate', e => e.waitUntil(clients.claim()));
+    self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => caches.match(e.request))));
+  `;
+  const blob = new Blob([sw], {type:'application/javascript'});
+  navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
+}
+</script>
+</body>
+</html>
